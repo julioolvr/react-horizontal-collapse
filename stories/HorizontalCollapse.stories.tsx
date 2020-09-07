@@ -17,7 +17,7 @@ export const Default = (props?: Partial<Props>) => (
       padding: '1em',
     }}
   >
-    <HorizontalCollapse {...props}>
+    <HorizontalCollapse {...props} placeholderElement={<div>...</div>}>
       <div>Child1</div>
       <div>Child2</div>
       <div>Child3</div>

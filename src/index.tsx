@@ -13,6 +13,7 @@ export interface Props extends HTMLAttributes<HTMLDivElement> {
   children?: ReactNode;
   keepInitial?: number;
   keepLast?: number;
+  placeholderElement?: ReactNode;
 }
 
 // Please do not use types off of a default export module or else Storybook Docs will suffer.
@@ -20,6 +21,7 @@ export interface Props extends HTMLAttributes<HTMLDivElement> {
 export const HorizontalCollapse: FC<Props> = ({
   keepInitial = 1,
   keepLast = 1,
+  placeholderElement,
   children,
 }) => {
   const { ref: containerRef, width: containerWidth } = useDimensions<
@@ -29,6 +31,7 @@ export const HorizontalCollapse: FC<Props> = ({
     HTMLDivElement
   >();
   const measurementContainerRef = useRef<HTMLDivElement>(null);
+  const placeholderContainerRef = useRef<HTMLDivElement>(null);
   const [skippedChildren, setSkippedChildren] = useState(0);
 
   const resize = useCallback(() => {
@@ -38,12 +41,20 @@ export const HorizontalCollapse: FC<Props> = ({
       return;
     }
 
-    const children = Array.from(measurementContainerRef.current.children);
+    const children = Array.from(measurementContainerRef.current.children).slice(
+      0,
+      measurementContainerRef.current.children.length - 1
+    );
 
     const childrenMeasurements = children.map(
       (child) => child.getBoundingClientRect().width
     );
-    // 2. Measure the placeholder element, if any (TODO)
+
+    // 2. Measure the placeholder element, if any
+    const placeholderWidth =
+      placeholderElement && placeholderContainerRef.current
+        ? placeholderContainerRef.current.getBoundingClientRect().width
+        : 0;
 
     // 3. Add up the minimum start and end elements
     const initialWidth = childrenMeasurements
@@ -58,17 +69,25 @@ export const HorizontalCollapse: FC<Props> = ({
     let usedWidth = initialWidth + finalWidth;
     let skippedChildren = remainingChildren;
 
-    while (
-      usedWidth + childrenMeasurements[keepInitial + skippedChildren - 1] <
-        containerWidth &&
-      skippedChildren > 0
-    ) {
+    const oneMoreFits = () =>
+      usedWidth +
+        childrenMeasurements[keepInitial + skippedChildren - 1] +
+        (skippedChildren > 1 ? placeholderWidth : 0) <
+      containerWidth;
+
+    while (oneMoreFits() && skippedChildren > 0) {
       usedWidth += childrenMeasurements[keepInitial + skippedChildren - 1];
       skippedChildren--;
     }
 
     setSkippedChildren(skippedChildren);
-  }, [keepInitial, keepLast, containerWidth, setSkippedChildren]);
+  }, [
+    keepInitial,
+    keepLast,
+    containerWidth,
+    setSkippedChildren,
+    placeholderElement,
+  ]);
 
   const previousContainerWidth = usePrevious(containerWidth);
   const containerWidthGrew =
@@ -90,6 +109,7 @@ export const HorizontalCollapse: FC<Props> = ({
 
   const childrenToRender = [
     ...childrenArray.slice(0, keepInitial),
+    ...(skippedChildren > 0 && placeholderElement ? [placeholderElement] : []),
     ...childrenArray.slice(keepInitial + skippedChildren),
   ];
 
@@ -101,6 +121,7 @@ export const HorizontalCollapse: FC<Props> = ({
         style={{ display: 'flex', position: 'absolute', visibility: 'hidden' }}
       >
         {children}
+        <div ref={placeholderContainerRef}>{placeholderElement}</div>
       </div>
 
       <div ref={contentRef} style={{ display: 'flex' }}>
