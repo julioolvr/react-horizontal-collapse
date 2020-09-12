@@ -116,6 +116,10 @@ export const HorizontalCollapse: FC<Props> = ({
   return (
     <div ref={containerRef} style={{ display: 'flex', maxWidth: '100%' }}>
       {/* TODO: Don't always render this thing, only when needed */}
+      {/*
+        TODO: How to ensure this container gets rendered exactly the same as the
+        real one? Any CSS edge cases? Relative sizes, stuff like that.
+      */}
       <div
         ref={measurementContainerRef}
         style={{ display: 'flex', position: 'absolute', visibility: 'hidden' }}
